@@ -1,0 +1,7 @@
+.bloop/
+.metals/
+out/
+
+.DS_Store
+
+*.ppm
