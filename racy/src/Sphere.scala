@@ -40,4 +40,9 @@ final case class Sphere(
 
     None
   }
+
+  val boundingBox = Aabb(
+    center - Vector(radius.abs, radius.abs, radius.abs),
+    center + Vector(radius.abs, radius.abs, radius.abs)
+  )
 }

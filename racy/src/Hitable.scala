@@ -6,4 +6,6 @@ trait Hitable {
       tMin: Double = 0,
       tMax: Double = Double.MaxValue
   ): Option[HitRecord]
+
+  val boundingBox: Aabb
 }

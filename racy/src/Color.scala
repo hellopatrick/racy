@@ -30,3 +30,8 @@ final case class Color(val r: Double, val g: Double, val b: Double) {
     Color(that.r + r, that.g + g, that.b + b)
   }
 }
+
+object Color {
+  val black = Color(0.0, 0.0, 0.0)
+  val white = Color(1.0, 1.0, 1.0)
+}

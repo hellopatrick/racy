@@ -4,48 +4,52 @@ import math.{sqrt, cos}
 import scala.util.Random
 import scala.collection.parallel.CollectionConverters._
 import scala.collection.parallel.immutable.ParVector
+import me.tongfei.progressbar.ProgressBar
 
 object main extends App {
-  def color(ray: Ray, world: World, depth: Int): Color = {
-    if (depth > 50) {
-      return Color(0, 0, 0)
-    }
-
+  def color(ray: Ray, world: Hitable, depth: Int): Color = {
     world.hit(ray, 0.0001) match {
       case Some(record) => {
+        val emitColor = record.m.emitted(0, 0, record.p)
+
         record.m.scatter(ray, record) match {
-          case Some(s) => s.attenuation * color(s.scattered, world, depth + 1)
-          case _       => Color(0, 0, 0)
+          case Some(s) if depth < 50 =>
+            emitColor + s.attenuation * color(s.scattered, world, depth + 1)
+          case _ => emitColor
         }
       }
-      case None => {
-        val t = 0.5 * (ray.direction.unit.y + 1.0)
-        Color(1.0 - t, 1.0 - t, 1.0 - t) + Color(0.5, 0.7, 1.0)
-      }
+      case None => Color.black
     }
   }
 
-  val spheres = List(
-    Sphere(Point(0.0, 0.0, -1.0), 0.5, Lambertian(Color(0.3, 0.3, 0.8))),
-    Sphere(Point(0.0, -200.5, -1.0), 200.0, Lambertian(Color(0.8, 0.8, 0.0))),
-    Sphere(Point(1.0, 0.0, -1.0), 0.5, Metal(Color(0.8, 0.6, 0.2), 1.0)),
-    Sphere(Point(-1.0, 0.0, -1.0), 0.5, Dielectrics(1.5)),
-    Sphere(Point(-1.0, 0.0, -1.0), -0.45, Dielectrics(1.5))
+  val red = Lambertian(Solid(Color(0.65, 0.05, 0.05)))
+  val green = Lambertian(Solid(Color(0.12, 0.45, 0.15)))
+  val white = Lambertian(Solid(Color(0.73, 0.73, 0.73)))
+  val light = DiffuseLight(Color.white * 15.0)
+
+  val cornellBox = List(
+    Flip(YZRect(0, 0, 555, 555, 555, green)),
+    YZRect(0, 0, 555, 555, 0, red),
+    XZRect(213, 227, 343, 332, 554, light),
+    Flip(XZRect(0, 0, 555, 555, 555, white)),
+    XZRect(0, 0, 555, 555, 0, white),
+    Flip(XYRect(0, 0, 555, 555, 555, white)),
+    Sphere(Point(100, 50, 50), 50, Dielectrics(1.0))
   )
 
-  val world = World(spheres)
+  val world = BVH.of(cornellBox).get
 
-  val nx = 800
-  val ny = 400
-  val ns = 64
+  val nx = 512
+  val ny = 512
+  val ns = 512
 
   val img = new Image(nx, ny)
 
   val camera = Camera(
-    Point(0.0, 1.0, 1.0),
-    Point(0.0, 0.0, -1.0),
+    Point(278, 278, -800),
+    Point(278, 278, -0.0),
     Vector.Y,
-    90.0,
+    40.0,
     nx.toDouble / ny.toDouble
   )
 
@@ -53,6 +57,8 @@ object main extends App {
 
   val ys = ParVector.range(0, ny)
   val xs = ParVector.range(0, nx)
+
+  val progressBar = new ProgressBar("rendering", nx * ny)
 
   for (x <- xs;
        y <- ys) {
@@ -71,7 +77,10 @@ object main extends App {
         .reduce(_ + _)
         .gamma
     )
+    progressBar.step()
   }
+
+  progressBar.close()
 
   img.save("./output.ppm")
 }

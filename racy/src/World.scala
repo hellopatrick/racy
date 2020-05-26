@@ -10,4 +10,10 @@ final case class World(val hitables: Seq[Hitable]) extends Hitable {
       case Seq() => { None }
       case hits  => Some(hits.minBy { _.t })
     }
+
+  lazy val boundingBox = {
+    hitables.foldLeft(Aabb.empty) { (box, hitable) =>
+      box.merge(hitable.boundingBox)
+    }
+  }
 }

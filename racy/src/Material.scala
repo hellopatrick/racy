@@ -7,9 +7,10 @@ case class Scatter(attenuation: Color, scattered: Ray)
 
 trait Material {
   def scatter(ray: Ray, hitRecord: HitRecord): Option[Scatter]
+  def emitted(u: Double, v: Double, p: Point): Color = Color.black
 }
 
-case class Lambertian(albedo: Color) extends Material {
+case class Lambertian(albedo: Texture) extends Material {
   override def scatter(
       ray: Ray,
       hitRecord: HitRecord
@@ -19,7 +20,7 @@ case class Lambertian(albedo: Color) extends Material {
 
     Some(
       Scatter(
-        albedo,
+        albedo(0, 0, hitRecord.p),
         Ray(hitRecord.p, target - hitRecord.p)
       )
     )
@@ -108,4 +109,9 @@ case class Dielectrics(refractionIndex: Double) extends Material {
         )
     }
   }
+}
+
+case class DiffuseLight(color: Color) extends Material {
+  def scatter(ray: Ray, hitRecord: HitRecord): Option[Scatter] = None
+  override def emitted(u: Double, v: Double, p: Point): Color = color
 }
